@@ -8,7 +8,7 @@ from aiogram.types import ReplyKeyboardRemove
 from parser import get_tntu_schedule
 
 # ВСТАВ СВОЙ РЕАЛЬНЫЙ ТОКЕН
-TOKEN = '8716120774:AAGMHQU1VQefq6reYHIXsFgNyGF-2_I8gOg'
+TOKEN = '8716120774:AAFUZGQHisGOxawRx1KGUtn1cqcAvppD-Ao'
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()

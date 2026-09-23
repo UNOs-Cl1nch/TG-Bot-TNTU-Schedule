@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+venv/
+.venv/
+
+# Конфиденциальные данные
+.env
+*.env
+
+# IDE (настройки твоей IntelliJ IDEA)
+.idea/
