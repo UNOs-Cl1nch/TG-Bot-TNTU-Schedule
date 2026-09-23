@@ -1,14 +1,19 @@
+import os
 import asyncio
 import datetime
 import aiohttp
+from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart, Command
 from aiogram.types import ReplyKeyboardRemove
 
 from parser import get_tntu_schedule
 
-# ВСТАВ СВОЙ РЕАЛЬНЫЙ ТОКЕН
-TOKEN = '8716120774:AAFUZGQHisGOxawRx1KGUtn1cqcAvppD-Ao'
+load_dotenv()
+
+TOKEN = os.getenv('TOKEN')
+if not TOKEN:
+    raise ValueError("Помилка: Токен не знайдено!")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -35,19 +40,14 @@ user_sent_messages = {}
 
 # --- МАТЕМАТИЧЕСКАЯ ЛОГИКА ОПРЕДЕЛЕНИЯ НЕДЕЛИ ---
 def get_week_number(target_date):
-    # Опорная дата: 21 сентября 2026 года (Это понедельник 2-й недели)
     ref_monday = datetime.date(2026, 9, 21)
 
-    # Приводим к типу date
     target = target_date.date() if isinstance(target_date, datetime.datetime) else target_date
 
-    # Находим понедельник для запрашиваемой даты
     target_monday = target - datetime.timedelta(days=target.weekday())
 
-    # Считаем разницу в неделях
     weeks_diff = (target_monday - ref_monday).days // 7
 
-    # Чередование: если разница четная (0, 2, 4...) -> 2-я неделя. Если нечетная -> 1-я неделя.
     return 2 if weeks_diff % 2 == 0 else 1
 
 
@@ -316,18 +316,15 @@ async def send_today_logic(message: types.Message, force_delete=False):
     now = datetime.datetime.now()
     target_date = now
 
-    # Если сегодня воскресенье (6), мы автоматически переключаем расписание на понедельник следующей недели
     if now.weekday() == 6:
         target_date = now + datetime.timedelta(days=1)
 
     today_index = target_date.weekday()
     today_name = ukrainian_days[today_index]
 
-    # Если выбран "Поточний", мы используем математически вычисленную неделю для парсера
     calculated_week = get_week_number(target_date)
     fetch_week = calculated_week if settings["week"] == 0 else settings["week"]
 
-    # Передаем правильный номер недели в парсер
     data = get_tntu_schedule(settings["group"], fetch_week)
 
     if "error" in data:
@@ -336,7 +333,6 @@ async def send_today_logic(message: types.Message, force_delete=False):
         user_sent_messages[chat_id] = [sent.message_id]
         return
 
-    # Для субботы показываем расписание понедельника (как ты и просил)
     times_data = data.get("понеділок", {}) if today_index == 5 else data.get(today_name, {})
 
     html_content = format_native_html_table(today_name, target_date, times_data, settings["sub"], settings["group"], settings["week"], show_buttons=True)
@@ -371,7 +367,6 @@ async def send_full_logic(message: types.Message, force_delete=False):
     now = datetime.datetime.now()
     target_date = now
 
-    # Если сегодня воскресенье (6), переключаемся на понедельник следующей недели
     if now.weekday() == 6:
         target_date = now + datetime.timedelta(days=1)
 
@@ -392,10 +387,8 @@ async def send_full_logic(message: types.Message, force_delete=False):
         old_msgs = []
 
     new_ids = []
-    # Выводим 6 дней (с понедельника по субботу)
     for i in range(6):
         day_name = ukrainian_days[i]
-        # Высчитываем дату для каждого дня в рамках просматриваемой недели
         day_date = target_date - datetime.timedelta(days=target_date.weekday()) + datetime.timedelta(days=i)
 
         times_data = data.get("понеділок", {}) if i == 5 else data.get(day_name, {})
